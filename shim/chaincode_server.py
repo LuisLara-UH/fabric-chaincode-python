@@ -11,7 +11,8 @@ class ChaincodeServer(ChaincodeServicer):
     chaincode: Chaincode
 
     def __init__(self) -> None:
-        self.chaincode_id = ''
+        self.chaincode_id = 'basic_1.0:7ceebfb7273dc6132dff4f089fe7dcd43942493c28cd6db650d51fbd011d79a0'
+        self.chaincode = None
 
     def Start(self):
         server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))

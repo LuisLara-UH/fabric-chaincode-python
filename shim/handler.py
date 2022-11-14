@@ -1,4 +1,5 @@
 from fabric_protos_python.peer.chaincode_shim_pb2_grpc import Chaincode
+from fabric_protos_python.peer import chaincode_pb2
 from utils import *
 
 class MessageHandler:
@@ -47,10 +48,10 @@ class MessageHandler:
             self.handle_response(msg)
         elif msg.type == MessageType.INIT:
             print(log_prefix + 'initializing chaincode...')
-            self.init_chaincode(msg)
+            self.handle_message(msg, 'init')
         elif msg.type == MessageType.TRANSACTION:
             print(log_prefix + 'invoking transaction on chaincode...')
-            self.invoke_transaction(msg)
+            self.handle_message(msg, 'invoke')
         else:
             error: Message = error_message('Chaincode is in READY state, it cannot process ' + msg.type + ' messages')
             print(error.payload)
@@ -60,8 +61,5 @@ class MessageHandler:
     def handle_response(self, msg: Message):
         pass
 
-    def init_chaincode(self, msg: Message):
-        pass
-
-    def invoke_transaction(self, msg: Message):
+    def handle_message(self, msg: Message, action: str):
         pass
