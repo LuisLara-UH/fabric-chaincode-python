@@ -9,6 +9,11 @@ class MessageType(Enum):
     TRANSACTION = 'TRANSACTION',	# ChaincodeMessage.Type.TRANSACTION
     COMPLETED = 'COMPLETED',		# ChaincodeMessage.Type.COMPLETED
 
+class ResponseCode(Enum):
+    OK = 200,
+    ERROR_THRESHOLD = 400,
+    ERROR = 500
+
 class Message:
     type: str               # ChaincodeMessage.Type
     timestamp: int          # ChaincodeMessage.Timestamp

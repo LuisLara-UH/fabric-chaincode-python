@@ -1,6 +1,7 @@
 from fabric_protos_python.peer.chaincode_shim_pb2_grpc import Chaincode
 from fabric_protos_python.peer import chaincode_pb2
 from utils import *
+from stub import ChaincodeStub
 
 class MessageHandler:
     chaincode_id: str
@@ -62,4 +63,76 @@ class MessageHandler:
         pass
 
     def handle_message(self, msg: Message, action: str):
-        pass
+        try:
+            input = chaincode_pb2.ChaincodeInput.deserializeBinary(msg.payload)
+        except:
+            print('%s Incorrect payload format. Sending ERROR message back to peer' % msg.logging_prefix())
+            nextStateMsg = Message({
+                type: MessageType.ERROR.name,
+                payload: msg.payload,
+                txid: msg.txid,
+                channel_id: msg.channel_id
+            })
+
+        if input:
+            try:
+                stub = ChaincodeStub(self, msg.channel_id, msg.txid, input, msg.proposal)
+            except Exception as e:
+                print('Failed to construct a chaincode stub instance from the INIT message: %s' % e)
+                nextStateMsg = Message({
+                    type: MessageType.ERROR.name,
+                    payload: bytes(e.toString()),
+                    txid: msg.txid,
+                    channel_id: msg.channel_id
+                })
+
+                yield nextStateMsg.to_chaincode_message()
+
+            if stub:
+                if action == 'init':
+                    resp = self.chaincode.Init(stub)
+                    method = 'Init'
+                else:
+                    resp = self.chaincode.Invoke(stub)
+                    method = 'Invoke'
+
+                # check that a response object has been returned otherwise assume an error.
+
+                if not resp or not resp.status:
+                    errMsg = '%s Calling chaincode %s() has not called success or error.' % (msg.logging_prefix(), method)
+                    print(errMsg)
+
+                    resp = {
+                        status: ResponseCode.ERROR.value,
+                        message: errMsg
+                    }
+                
+                print('%s Calling chaincode %s(), response status: %s' % (msg.logging_prefix(), method, resp.status))
+
+                response = { message: resp.message, status: resp.status, payload: resp.payload }
+
+                if resp.status >= ResponseCode.ERROR.value:
+                    errMsg = '%s Calling chaincode %s() returned error response [%s]. Sending COMPLETED message back to peer' % (msg.logging_prefix(), method, resp.message)
+                    print(errMsg)
+
+                    nextStateMsg = Message({
+                        type: MessageType.COMPLETED.name,
+                        payload: response.serializeBinary(),
+                        txid: msg.txid,
+                        channel_id: msg.channel_id,
+                        chaincode_event: stub.chaincodeEvent
+                    })
+                else:
+                    print('%s Calling chaincode %s() succeeded. Sending COMPLETED message back to peer' % (msg.logging_prefix(), method))
+
+                    nextStateMsg = Message({
+                        type: MessageType.COMPLETED.name,
+                        payload: response.serializeBinary(),
+                        txid: msg.txid,
+                        channel_id: msg.channel_id,
+                        chaincode_event: stub.chaincodeEvent
+                    })
+
+                yield nextStateMsg.to_chaincode_message()
+        else:
+            yield nextStateMsg.to_chaincode_message()
