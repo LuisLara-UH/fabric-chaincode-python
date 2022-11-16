@@ -1,6 +1,6 @@
-from handler import MessageHandler
 from fabric_protos_python.peer import chaincode_pb2 as pb
 from fabric_protos_python.common import common_pb2 as cm_pb
+from fabric_protos_python.peer import proposal_pb2 as pr_pb
 from fabric_protos_python import msp
 from fabric_protos_python.peer import chaincode_event_pb2 as e_pb
 import os
@@ -11,22 +11,21 @@ VALIDATION_PARAMETER = 'VALIDATION_PARAMETER'
 EMPTY_KEY_SUBSTITUTE = '\x01'
 
 class ChaincodeStub:
-    client: MessageHandler
     channel_id: str
     tx_id: str
     chaincode_input: pb.ChaincodeInput
-    signed_proposal: pb.SignedProposal
+    signed_proposal: pr_pb.SignedProposal
     validation_parameter_meta_key: str
     creator: dict
     txTimestamp: any # Type?
 
     def __init__(
             self, 
-            client: MessageHandler, 
+            client, 
             channel_id: str, 
             tx_id: str, 
             chaincode_input: pb.ChaincodeInput, 
-            signed_proposal: pb.SignedProposal
+            signed_proposal: pr_pb.SignedProposal
             ) -> None:
         self.client = client
         self.channel_id = channel_id
